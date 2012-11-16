@@ -1,0 +1,112 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>org.jboss.test</groupId>
+	<artifactId>kerberos</artifactId>
+	<version>1.0-SNAPSHOT</version>
+	<packaging>jar</packaging>
+
+	<name>kerberos-using-apacheds</name>
+	<url>https://github.com/kwart/kerberos-using-apacheds</url>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<version.apacheds>2.0.0-M7</version.apacheds>
+		<version.apacheds.shared>1.0.0-M12</version.apacheds.shared>		
+	</properties>
+
+	<build>
+		<finalName>kerberos-using-apacheds</finalName>
+		<resources>
+			<!-- include *.java in the output JAR -->
+			<resource>
+				<directory>src/main/java</directory>
+				<includes>
+					<include>**/*.java</include>
+				</includes>
+			</resource>
+		</resources>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>2.0</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+						<configuration>
+							<createDependencyReducedPom>false</createDependencyReducedPom>
+							<transformers>
+								<transformer
+									implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+									<mainClass>org.jboss.test.kerberos.KerberosSetup</mainClass>
+								</transformer>
+							</transformers>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>		
+	</build>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.apache.directory.server</groupId>
+			<artifactId>apacheds-all</artifactId>
+			<version>${version.apacheds}</version>
+		</dependency>
+ 		
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-simple</artifactId>
+			<version>1.6.4</version>
+		</dependency>
+
+<!-- 
+		<dependency>
+			<groupId>org.apache.directory.server</groupId>
+			<artifactId>apacheds-core</artifactId>
+			<version>${version.apacheds}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.directory.server</groupId>
+			<artifactId>apacheds-server-config</artifactId>
+			<version>${version.apacheds}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.directory.server</groupId>
+			<artifactId>apacheds-protocol-ldap</artifactId>
+			<version>${version.apacheds}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.directory.server</groupId>
+			<artifactId>apacheds-interceptors-hash</artifactId>
+			<version>${version.apacheds}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.directory.server</groupId>
+			<artifactId>apacheds-interceptor-kerberos</artifactId>
+			<version>${version.apacheds}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.directory.server</groupId>
+			<artifactId>apacheds-server-annotations</artifactId>
+			<version>${version.apacheds}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.directory.shared</groupId>
+			<artifactId>shared-ldap-codec-standalone</artifactId>
+			<version>${version.apacheds.shared}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.directory.server</groupId>
+			<artifactId>apacheds-core-jndi</artifactId>
+			<version>${version.apacheds}</version>
+		</dependency>
+-->
+	</dependencies>
+</project>
