@@ -163,7 +163,7 @@ public class KerberosSetup {
 
     protected void startKDC(final String[] args) throws Exception {
         directoryService = DSAnnotationProcessor.getDirectoryService();
-
+        LOGGER.info("Initializing KDC server with binding to '{}'", canonicalHost);
         if (args != null && args.length > 0) {
             final Map<String, String> map = new HashMap<String, String>();
             map.put("hostname", canonicalHost);
