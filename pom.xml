@@ -18,15 +18,6 @@
 
 	<build>
 		<finalName>kerberos-using-apacheds</finalName>
-		<resources>
-			<!-- include *.java in the output JAR -->
-			<resource>
-				<directory>src/main/java</directory>
-				<includes>
-					<include>**/*.java</include>
-				</includes>
-			</resource>
-		</resources>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -48,6 +39,16 @@
 							<goal>shade</goal>
 						</goals>
 						<configuration>
+							<filters>
+								<filter>
+									<artifact>*:*</artifact>
+									<excludes>
+										<exclude>META-INF/*.SF</exclude>
+										<exclude>META-INF/*.DSA</exclude>
+										<exclude>META-INF/*.RSA</exclude>
+									</excludes>
+								</filter>
+							</filters>
 							<createDependencyReducedPom>false</createDependencyReducedPom>
 							<transformers>
 								<transformer

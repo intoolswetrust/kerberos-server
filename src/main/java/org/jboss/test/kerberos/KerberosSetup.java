@@ -101,11 +101,13 @@ public class KerberosSetup {
     private DirectoryService directoryService;
     private KdcServer kdcServer;
     private final String canonicalHost;
+    private final String krb5ConfPath;
 
     // Constructors ----------------------------------------------------------
 
     public KerberosSetup() {
         canonicalHost = getCannonicalHost(System.getProperty("kerberos.bind.address", "localhost"));
+        krb5ConfPath = System.getProperty("kerberos.conf.path", "krb5.conf");
     }
 
     // Public methods --------------------------------------------------------
@@ -164,9 +166,9 @@ public class KerberosSetup {
     protected void startKDC(final String[] args) throws Exception {
         directoryService = DSAnnotationProcessor.getDirectoryService();
         LOGGER.info("Initializing KDC server with binding to '{}'", canonicalHost);
+        final Map<String, String> map = new HashMap<String, String>();
+        map.put("hostname", canonicalHost);
         if (args != null && args.length > 0) {
-            final Map<String, String> map = new HashMap<String, String>();
-            map.put("hostname", canonicalHost);
             for (String ldifFile : args) {
 
                 final String ldifContent = StrSubstitutor.replace(FileUtils.readFileToString(new File(ldifFile), "UTF-8"), map);
@@ -182,6 +184,10 @@ public class KerberosSetup {
                 }
             }
         }
+        LOGGER.info("Generating kerberos configuration file '{}'", krb5ConfPath);
+        FileUtils.write(new File(krb5ConfPath),
+                StrSubstitutor.replace(IOUtils.toString(getClass().getResourceAsStream("/krb5.conf"), "UTF-8"), map));
+
         kdcServer = KDCServerAnnotationProcessor.getKdcServer(directoryService, 1024, canonicalHost);
     }
 
