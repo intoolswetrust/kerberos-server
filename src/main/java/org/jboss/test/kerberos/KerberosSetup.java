@@ -39,7 +39,16 @@ import java.util.Map;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.text.StrSubstitutor;
+import org.apache.directory.api.ldap.model.constants.SupportedSaslMechanisms;
+import org.apache.directory.api.ldap.model.entry.DefaultEntry;
+import org.apache.directory.api.ldap.model.ldif.LdifEntry;
+import org.apache.directory.api.ldap.model.ldif.LdifReader;
+import org.apache.directory.api.ldap.model.schema.SchemaManager;
+import org.apache.directory.server.annotations.CreateKdcServer;
+import org.apache.directory.server.annotations.CreateLdapServer;
 import org.apache.directory.server.annotations.CreateTransport;
+import org.apache.directory.server.annotations.SaslMechanism;
+import org.apache.directory.server.core.annotations.AnnotationUtils;
 import org.apache.directory.server.core.annotations.ContextEntry;
 import org.apache.directory.server.core.annotations.CreateDS;
 import org.apache.directory.server.core.annotations.CreateIndex;
@@ -47,11 +56,14 @@ import org.apache.directory.server.core.annotations.CreatePartition;
 import org.apache.directory.server.core.api.DirectoryService;
 import org.apache.directory.server.core.factory.DSAnnotationProcessor;
 import org.apache.directory.server.core.kerberos.KeyDerivationInterceptor;
+import org.apache.directory.server.factory.ServerAnnotationProcessor;
 import org.apache.directory.server.kerberos.kdc.KdcServer;
-import org.apache.directory.shared.ldap.model.entry.DefaultEntry;
-import org.apache.directory.shared.ldap.model.ldif.LdifEntry;
-import org.apache.directory.shared.ldap.model.ldif.LdifReader;
-import org.apache.directory.shared.ldap.model.schema.SchemaManager;
+import org.apache.directory.server.ldap.LdapServer;
+import org.apache.directory.server.ldap.handlers.sasl.cramMD5.CramMd5MechanismHandler;
+import org.apache.directory.server.ldap.handlers.sasl.digestMD5.DigestMd5MechanismHandler;
+import org.apache.directory.server.ldap.handlers.sasl.gssapi.GssapiMechanismHandler;
+import org.apache.directory.server.ldap.handlers.sasl.ntlm.NtlmMechanismHandler;
+import org.apache.directory.server.ldap.handlers.sasl.plain.PlainMechanismHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,7 +94,23 @@ import org.slf4j.LoggerFactory;
           })
   },
   additionalInterceptors = { KeyDerivationInterceptor.class })     
-@ExtCreateKdcServer(primaryRealm = "JBOSS.ORG",
+@CreateLdapServer (
+        transports =
+        {
+            @CreateTransport( protocol = "LDAP",  port = 10389)
+        },
+        saslHost="localhost",
+        saslPrincipal="ldap/localhost@JBOSS.ORG",
+        saslMechanisms =
+        {
+            @SaslMechanism( name=SupportedSaslMechanisms.PLAIN, implClass=PlainMechanismHandler.class ),
+            @SaslMechanism( name=SupportedSaslMechanisms.CRAM_MD5, implClass=CramMd5MechanismHandler.class),
+            @SaslMechanism( name= SupportedSaslMechanisms.DIGEST_MD5, implClass=DigestMd5MechanismHandler.class),
+            @SaslMechanism( name=SupportedSaslMechanisms.GSSAPI, implClass=GssapiMechanismHandler.class),
+            @SaslMechanism( name=SupportedSaslMechanisms.NTLM, implClass=NtlmMechanismHandler.class),
+            @SaslMechanism( name=SupportedSaslMechanisms.GSS_SPNEGO, implClass=NtlmMechanismHandler.class)
+        })
+@CreateKdcServer(primaryRealm = "JBOSS.ORG",
   kdcPrincipal = "krbtgt/JBOSS.ORG@JBOSS.ORG",
   searchBaseDn = "dc=jboss,dc=org",
   transports = 
@@ -99,6 +127,7 @@ public class KerberosSetup {
     private static final int SERVER_PORT = 10959;
 
     private DirectoryService directoryService;
+    private LdapServer ldapServer;
     private KdcServer kdcServer;
     private final String canonicalHost;
     private final String krb5ConfPath;
@@ -161,6 +190,7 @@ public class KerberosSetup {
             System.out.println("Stop command: " + isStop);
             socket.close();
         } while (!isStop);
+        IOUtils.closeQuietly(srv);
     }
 
     protected void startKDC(final String[] args) throws Exception {
@@ -187,11 +217,22 @@ public class KerberosSetup {
         LOGGER.info("Generating kerberos configuration file '{}'", krb5ConfPath);
         FileUtils.write(new File(krb5ConfPath),
                 StrSubstitutor.replace(IOUtils.toString(getClass().getResourceAsStream("/krb5.conf"), "UTF-8"), map));
-
+        System.out.println("Starting KDC");
         kdcServer = KDCServerAnnotationProcessor.getKdcServer(directoryService, 1024, canonicalHost);
+        System.out.println("Starting LDAP server");
+        final ManagedCreateLdapServer createLdapServer = new ManagedCreateLdapServer(
+                (CreateLdapServer) AnnotationUtils.getInstance(CreateLdapServer.class));
+        createLdapServer.setSaslHost(canonicalHost);
+        createLdapServer.setSaslPrincipal("ldap/" + canonicalHost + "@JBOSS.ORG");
+        fixTransportAddress(createLdapServer, canonicalHost);
+        ldapServer = ServerAnnotationProcessor.instantiateLdapServer(createLdapServer, directoryService);
+        ldapServer.setSearchBaseDn("dc=jboss,dc=org");
+        ldapServer.start();
     }
 
     protected void stopKDC() throws Exception {
+        System.out.println("Stoping LDAP server.");
+        ldapServer.stop();
         System.out.println("Stoping Kerberos server.");
         kdcServer.stop();
         System.out.println("Stoping Directory service.");
@@ -215,5 +256,19 @@ public class KerberosSetup {
             LOGGER.warn("Unable to get cannonical host name", e);
         }
         return host.toLowerCase(Locale.ENGLISH);
+    }
+
+    /**
+     * Fixes bind address in the CreateTransport annotation.
+     *
+     * @param createLdapServer
+     */
+    private void fixTransportAddress(ManagedCreateLdapServer createLdapServer, String address) {
+        final CreateTransport[] createTransports = createLdapServer.transports();
+        for (int i = 0; i < createTransports.length; i++) {
+            final ManagedCreateTransport mgCreateTransport = new ManagedCreateTransport(createTransports[i]);
+            mgCreateTransport.setAddress(address);
+            createTransports[i] = mgCreateTransport;
+        }
     }
 }

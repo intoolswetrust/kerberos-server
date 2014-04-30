@@ -21,24 +21,37 @@
  */
 package org.jboss.test.kerberos;
 
+import static org.apache.directory.server.factory.ServerAnnotationProcessor.createTransport;
+
+import java.io.IOException;
+import java.lang.reflect.Field;
+
+import javax.security.auth.kerberos.KerberosPrincipal;
+
+import org.apache.directory.api.ldap.model.exception.LdapInvalidDnException;
+import org.apache.directory.server.annotations.CreateChngPwdServer;
+import org.apache.directory.server.annotations.CreateKdcServer;
 import org.apache.directory.server.annotations.CreateTransport;
 import org.apache.directory.server.core.annotations.AnnotationUtils;
 import org.apache.directory.server.core.api.DirectoryService;
 import org.apache.directory.server.i18n.I18n;
+import org.apache.directory.server.kerberos.ChangePasswordConfig;
+import org.apache.directory.server.kerberos.KerberosConfig;
+import org.apache.directory.server.kerberos.changepwd.ChangePasswordServer;
 import org.apache.directory.server.kerberos.kdc.KdcServer;
+import org.apache.directory.server.kerberos.shared.replay.ReplayCache;
 import org.apache.directory.server.protocol.shared.transport.TcpTransport;
 import org.apache.directory.server.protocol.shared.transport.Transport;
 import org.apache.directory.server.protocol.shared.transport.UdpTransport;
+import org.apache.directory.shared.kerberos.KerberosTime;
 import org.apache.mina.util.AvailablePortFinder;
 
 /**
  * Annotation processor for creating Kerberos servers - based on original implementation in
  * {@link org.apache.directory.server.factory.ServerAnnotationProcessor}. This implementation only adds a workaround for
  * https://issues.apache.org/jira/browse/DIRKRB-85<br/>
- * Use this class together with {@link ExtCreateKdcServer} annotation.
- * 
+ *
  * @author Josef Cacek
- * @see ExtCreateKdcServer
  */
 public class KDCServerAnnotationProcessor {
 
@@ -46,7 +59,7 @@ public class KDCServerAnnotationProcessor {
 
     /**
      * Creates and starts KdcServer based on configuration from {@link ExtCreateKdcServer} annotation.
-     * 
+     *
      * @param directoryService
      * @param startPort start port number used for searching free ports in case the transport has no port number preconfigured.
      * @param address if not null, use this bind address instead of the value configured in {@link Transport} annotation.
@@ -54,7 +67,7 @@ public class KDCServerAnnotationProcessor {
      * @throws Exception
      */
     public static KdcServer getKdcServer(DirectoryService directoryService, int startPort, String address) throws Exception {
-        final ExtCreateKdcServer createKdcServer = (ExtCreateKdcServer) AnnotationUtils.getInstance(ExtCreateKdcServer.class);
+        final CreateKdcServer createKdcServer = (CreateKdcServer) AnnotationUtils.getInstance(CreateKdcServer.class);
         return createKdcServer(createKdcServer, directoryService, startPort, address);
     }
 
@@ -62,31 +75,34 @@ public class KDCServerAnnotationProcessor {
 
     /**
      * Creates and starts {@link KdcServer} instance based on given configuration.
-     * 
+     *
      * @param createKdcServer
      * @param directoryService
      * @param startPort
      * @return
      */
-    private static KdcServer createKdcServer(ExtCreateKdcServer createKdcServer, DirectoryService directoryService,
-            int startPort, String bindAddress) {
+    private static KdcServer createKdcServer(CreateKdcServer createKdcServer, DirectoryService directoryService, int startPort,
+            String bindAddress) {
         if (createKdcServer == null) {
             return null;
         }
-        KdcServer kdcServer = new KdcServer();
-        kdcServer.setServiceName(createKdcServer.name());
-        kdcServer.setKdcPrincipal(createKdcServer.kdcPrincipal());
-        kdcServer.setPrimaryRealm(createKdcServer.primaryRealm());
-        kdcServer.setMaximumTicketLifetime(createKdcServer.maxTicketLifetime());
-        kdcServer.setMaximumRenewableLifetime(createKdcServer.maxRenewableLifetime());
+
+        KerberosConfig kdcConfig = new KerberosConfig();
+        kdcConfig.setServicePrincipal(createKdcServer.kdcPrincipal());
+        kdcConfig.setPrimaryRealm(createKdcServer.primaryRealm());
+        kdcConfig.setMaximumTicketLifetime(createKdcServer.maxTicketLifetime());
+        kdcConfig.setMaximumRenewableLifetime(createKdcServer.maxRenewableLifetime());
+        kdcConfig.setPaEncTimestampRequired(false);
+
+        KdcServer kdcServer = new NoReplayKdcServer(kdcConfig);
+
         kdcServer.setSearchBaseDn(createKdcServer.searchBaseDn());
-        kdcServer.setPaEncTimestampRequired(false);
 
         CreateTransport[] transportBuilders = createKdcServer.transports();
 
         if (transportBuilders == null) {
             // create only UDP transport if none specified
-            UdpTransport defaultTransport = new UdpTransport(AvailablePortFinder.getNextAvailable(startPort));
+            UdpTransport defaultTransport = new UdpTransport(bindAddress, AvailablePortFinder.getNextAvailable(startPort));
             kdcServer.addTransports(defaultTransport);
         } else if (transportBuilders.length > 0) {
             for (CreateTransport transportBuilder : transportBuilders) {
@@ -113,6 +129,27 @@ public class KDCServerAnnotationProcessor {
             }
         }
 
+        CreateChngPwdServer[] createChngPwdServers = createKdcServer.chngPwdServer();
+
+        if (createChngPwdServers.length > 0) {
+
+            CreateChngPwdServer createChngPwdServer = createChngPwdServers[0];
+            ChangePasswordConfig config = new ChangePasswordConfig(kdcConfig);
+            config.setServicePrincipal(createChngPwdServer.srvPrincipal());
+
+            ChangePasswordServer chngPwdServer = new ChangePasswordServer(config);
+
+            for (CreateTransport transportBuilder : createChngPwdServer.transports()) {
+                Transport t = createTransport(transportBuilder, startPort);
+                startPort = t.getPort() + 1;
+                chngPwdServer.addTransports(t);
+            }
+
+            chngPwdServer.setDirectoryService(directoryService);
+
+            kdcServer.setChangePwdServer(chngPwdServer);
+        }
+
         kdcServer.setDirectoryService(directoryService);
 
         // Launch the server
@@ -123,6 +160,66 @@ public class KDCServerAnnotationProcessor {
         }
 
         return kdcServer;
+
     }
 
+}
+
+/**
+ * Replacement of apacheDS KdcServer class with disabled ticket replay cache.
+ *
+ * @author Dominik Pospisil <dpospisi@redhat.com>
+ */
+class NoReplayKdcServer extends KdcServer {
+
+    NoReplayKdcServer(KerberosConfig kdcConfig) {
+        super(kdcConfig);
+    }
+
+    /**
+     *
+     * Dummy implementation of the ApacheDS kerberos replay cache. Essentially disables kerbores ticket replay checks.
+     * https://issues.jboss.org/browse/JBPAPP-10974
+     *
+     * @author Dominik Pospisil <dpospisi@redhat.com>
+     */
+    private class DummyReplayCache implements ReplayCache {
+
+        @Override
+        public boolean isReplay(KerberosPrincipal serverPrincipal, KerberosPrincipal clientPrincipal, KerberosTime clientTime,
+                int clientMicroSeconds) {
+            return false;
+        }
+
+        @Override
+        public void save(KerberosPrincipal serverPrincipal, KerberosPrincipal clientPrincipal, KerberosTime clientTime,
+                int clientMicroSeconds) {
+            return;
+        }
+
+        @Override
+        public void clear() {
+            return;
+        }
+
+    }
+
+    /**
+     * @throws IOException if we cannot bind to the sockets
+     */
+    @Override
+    public void start() throws IOException, LdapInvalidDnException {
+        super.start();
+
+        try {
+
+            // override initialized replay cache with a dummy implementation
+            Field replayCacheField = KdcServer.class.getDeclaredField("replayCache");
+            replayCacheField.setAccessible(true);
+            replayCacheField.set(this, new DummyReplayCache());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
 }

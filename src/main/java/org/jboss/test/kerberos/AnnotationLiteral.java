@@ -52,6 +52,8 @@ import java.util.Arrays;
  */
 public abstract class AnnotationLiteral<T extends Annotation> implements Annotation, Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     private transient Class<T> annotationType;
     private transient Method[] members;
 

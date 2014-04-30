@@ -40,6 +40,7 @@ import javax.security.auth.login.Configuration;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
 
+import org.apache.commons.io.IOUtils;
 import org.ietf.jgss.GSSContext;
 import org.ietf.jgss.GSSCredential;
 import org.ietf.jgss.GSSException;
@@ -66,7 +67,7 @@ public class GSSTestServer {
     public static final int CMD_NAME = 1;
     public static final int CMD_STOP = 2;
 
-    public static final int SOCKET_TIMEOUT = 30 * 1000; //30s
+    public static final int SOCKET_TIMEOUT = 30 * 1000; // 30s
 
     // Public methods --------------------------------------------------------
 
@@ -154,8 +155,9 @@ public class GSSTestServer {
 
         public String run() {
             final GSSManager gssManager = GSSManager.getInstance();
+            ServerSocket serverSocket = null;
             try {
-                final ServerSocket serverSocket = new ServerSocket(PORT);
+                serverSocket = new ServerSocket(PORT);
                 System.out.println("Server started on port " + PORT);
                 int command = CMD_NOOP;
                 do {
@@ -186,7 +188,7 @@ public class GSSTestServer {
                             final String clientName = gssContext.getSrcName().toString();
                             System.out.println("Context Established with Client " + clientName);
 
-                            //encrypt
+                            // encrypt
                             final MessageProp msgProp = new MessageProp(true);
                             final byte[] clientNameBytes = clientName.getBytes(CHAR_ENC);
                             final byte[] outToken = gssContext.wrap(clientNameBytes, 0, clientNameBytes.length, msgProp);
@@ -224,6 +226,8 @@ public class GSSTestServer {
             } catch (IOException e) {
                 e.printStackTrace();
                 return e.getMessage();
+            } finally {
+                IOUtils.closeQuietly(serverSocket);
             }
             return null;
         }
