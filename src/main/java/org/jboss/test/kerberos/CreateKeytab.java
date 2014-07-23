@@ -74,7 +74,7 @@ public class CreateKeytab {
     public static void createKeytab(final String principalName, final String passPhrase, final File keytabFile)
             throws IOException {
         final KerberosTime timeStamp = new KerberosTime();
-        final long principalType = 1L; //KRB5_NT_PRINCIPAL
+        final int principalType = 1; // KRB5_NT_PRINCIPAL
 
         final Keytab keytab = Keytab.getInstance();
         final List<KeytabEntry> entries = new ArrayList<KeytabEntry>();
