@@ -76,7 +76,7 @@ The project contains a simple Kerberos keytab generator:
 	Kerberos keytab generator
 	-------------------------
 	Usage:
-	java -classpath kerberos-using-apacheds.jar org.jboss.test.kerberos.CreateKeytab <principalName> <passPhrase> <outputKeytabFile>
+	java -classpath kerberos-using-apacheds.jar org.jboss.test.kerberos.CreateKeytab <principalName> <passPhrase> [<principalName2> <passPhrase2> ...] <outputKeytabFile>
 	
 	$ java -classpath kerberos-using-apacheds.jar org.jboss.test.kerberos.CreateKeytab HTTP/localhost@JBOSS.ORG httppwd http.keytab
 	Keytab file was created: /home/kwart/kerberos-tests/http.keytab
