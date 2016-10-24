@@ -49,7 +49,7 @@ The server binds to `localhost` by default. If you want to change it, set the Ja
 The application generates simple `krb5.conf` file when launched in the current directory. If you want to use another file,
 specify the `kerberos.conf.path` system property:
 
-	$ java -Dkerberos.conf.path=/tmp/krb5.conf -jar target/kerberos-using-apacheds.jar test.ldif
+	$ java -Dkerberos.conf.path=./krb5.conf -jar target/kerberos-using-apacheds.jar test.ldif
 
 ### Test the access - user login
 
@@ -76,8 +76,8 @@ The project contains a simple Kerberos keytab generator:
 	Kerberos keytab generator
 	-------------------------
 	Usage:
-	java -classpath kerberos-using-apacheds.jar org.jboss.test.kerberos.CreateKeytab <principalName> <passPhrase> [<principalName2> <passPhrase2> ...] <outputKeytabFile>
+	java -classpath target/kerberos-using-apacheds.jar org.jboss.test.kerberos.CreateKeytab <principalName> <passPhrase> [<principalName2> <passPhrase2> ...] <outputKeytabFile>
 	
-	$ java -classpath kerberos-using-apacheds.jar org.jboss.test.kerberos.CreateKeytab HTTP/localhost@JBOSS.ORG httppwd http.keytab
+	$ java -classpath target/kerberos-using-apacheds.jar org.jboss.test.kerberos.CreateKeytab HTTP/localhost@JBOSS.ORG httppwd http.keytab
 	Keytab file was created: /home/kwart/kerberos-tests/http.keytab
 
