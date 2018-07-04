@@ -93,3 +93,29 @@ uid: gsstestserver
 userPassword: gsstestpwd
 krb5PrincipalName: gsstestserver/xxx@JBOSS.ORG
 krb5KeyVersionNumber: 0
+
+dn: uid=server1,ou=Users,dc=jboss,dc=org
+objectClass: top
+objectClass: person
+objectClass: inetOrgPerson
+objectClass: krb5principal
+objectClass: krb5kdcentry
+cn: server2
+sn: Service
+uid: server1
+userPassword: gsstestpwd
+krb5PrincipalName: server1/hzc@JBOSS.ORG
+krb5KeyVersionNumber: 0
+
+dn: uid=server2,ou=Users,dc=jboss,dc=org
+objectClass: top
+objectClass: person
+objectClass: inetOrgPerson
+objectClass: krb5principal
+objectClass: krb5kdcentry
+cn: server2
+sn: Service
+uid: server2
+userPassword: gsstestpwd
+krb5PrincipalName: server2/hzc@JBOSS.ORG
+krb5KeyVersionNumber: 0
