@@ -25,7 +25,21 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
 import java.net.Socket;
+import java.security.PrivilegedAction;
+import java.security.PrivilegedExceptionAction;
+
+import javax.security.auth.Subject;
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.CallbackHandler;
+import javax.security.auth.callback.UnsupportedCallbackException;
+import javax.security.auth.login.AccountExpiredException;
+import javax.security.auth.login.Configuration;
+import javax.security.auth.login.CredentialExpiredException;
+import javax.security.auth.login.FailedLoginException;
+import javax.security.auth.login.LoginContext;
+import javax.security.auth.login.LoginException;
 
 import org.ietf.jgss.GSSContext;
 import org.ietf.jgss.GSSCredential;
@@ -136,4 +150,45 @@ public class GSSTestClient {
         }
     }
 
+    public static void main(String[] args) throws LoginException, MalformedURLException {
+        Krb5LoginConfiguration krb5Config = new Krb5LoginConfiguration(Configuration.getConfiguration());
+        Configuration.setConfiguration(krb5Config);
+        LoginContext lc = null;
+        try {
+            lc = new LoginContext(krb5Config.getName(), new CallbackHandler() {
+                
+                @Override
+                public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
+                    throw new UnsupportedCallbackException(callbacks[0]);
+                }
+            });
+        } catch (LoginException le) {
+            System.err.println("Cannot create LoginContext. "
+                + le.getMessage());
+            System.exit(-1);
+        } catch (SecurityException se) {
+            System.err .println("Cannot create LoginContext. "
+                + se.getMessage());
+            System.exit(-1);
+        }
+                lc.login();
+
+        // push the subject into the current ACC
+        try {
+            Subject.doAsPrivileged(lc.getSubject(),
+                                   new  PrivilegedExceptionAction<Void>() {
+
+                                    @Override
+                                    public Void run() throws IOException, GSSException {
+                                        GSSTestClient client = new GSSTestClient("localhost", GSSTestServer.PORT, GSSTestServer.PRINCIPAL);
+                                        System.out.println(">>> "+client.getName(null));
+                                        return null;
+                                    }
+                                },
+                                   null);
+        } catch (java.security.PrivilegedActionException pae) {
+            pae.printStackTrace();
+        }
+
+    }
 }
