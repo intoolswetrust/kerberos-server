@@ -21,10 +21,11 @@
  */
 package org.jboss.test.kerberos.gss;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
 
 import javax.security.auth.login.LoginException;
-import javax.sound.midi.SysexMessage;
 
 import org.ietf.jgss.GSSContext;
 import org.ietf.jgss.GSSException;
@@ -45,35 +46,15 @@ public class InitSpn {
 
     private final String spn;
 
-    // Constructors ----------------------------------------------------------
-
-    /**
-     * Create a new GSSTestClient.
-     * 
-     * @param serverHost
-     * @param serverPort
-     * @param spn Service Principal Name
-     */
     public InitSpn(String spn) {
         this.spn = spn;
     }
 
-    // Public methods --------------------------------------------------------
-
-    /**
-     * Retrieves the name of calling identity (based on given gssCredential) retrieved from {@link GSSTestServer}.
-     * 
-     * @param gssCredential
-     * @return
-     * @throws IOException
-     * @throws GSSException
-     */
     public String getName() throws IOException, GSSException {
         GSSContext gssContext = null;
         try {
             GSSManager manager = GSSManager.getInstance();
-            gssContext = manager.createContext(manager.createName(spn, null), KRB5_OID, null,
-                    GSSContext.DEFAULT_LIFETIME);
+            gssContext = manager.createContext(manager.createName(spn, null), KRB5_OID, null, GSSContext.DEFAULT_LIFETIME);
             byte[] token = new byte[0];
             token = gssContext.initSecContext(token, 0, token.length);
             GSSName srcName = gssContext.getSrcName();
@@ -92,13 +73,22 @@ public class InitSpn {
     }
 
     public static void main(String[] args) throws LoginException, IOException, GSSException {
-        if (args==null || args.length==0) {
-            System.err.println("Use SPNs as program arguments.");
+        if (args == null || args.length < 2) {
+            System.err.println("Usage: InitSpn LogFilePath SPN [SPN...]");
             System.exit(2);
         }
-        for (String spn: args) {
-            InitSpn client = new InitSpn(spn);
-            System.out.println(">>> "+client.getName());
+        try (PrintWriter pw = new PrintWriter(new FileOutputStream(args[0], true))) {
+            for (int i = 1; i < args.length; i++) {
+                try {
+                    InitSpn client = new InitSpn(args[i]);
+                    String name = client.getName();
+                    pw.println(">>> " + name);
+                    System.out.println(">>> " + name);
+                } catch (Exception e) {
+                    e.printStackTrace(pw);
+                    e.printStackTrace();
+                }
+            }
         }
     }
 }
