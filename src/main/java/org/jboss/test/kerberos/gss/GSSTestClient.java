@@ -111,9 +111,12 @@ public class GSSTestClient {
                     GSSContext.DEFAULT_LIFETIME);
 
             //            gssContext.requestCredDeleg(true);
-            gssContext.requestMutualAuth(true);
+            gssContext.requestMutualAuth(false);
             gssContext.requestConf(true);
             gssContext.requestInteg(true);
+//            gssContext.requestMutualAuth(false);
+//            gssContext.requestConf(false);
+//            gssContext.requestInteg(false);
 
             byte[] token = new byte[0];
             while (!gssContext.isEstablished()) {
@@ -175,7 +178,14 @@ public class GSSTestClient {
 
         // push the subject into the current ACC
         try {
-            Subject.doAsPrivileged(lc.getSubject(),
+            Subject subject = lc.getSubject();
+//            System.out.println("Subject Principals:" + subject.getPrincipals());
+            for (Object creds: subject.getPrivateCredentials()) {
+                System.out.println("Credential class: " + creds.getClass().getName());
+            }
+            System.out.println("Private Credentials:" + subject.getPrivateCredentials());
+//            System.out.println("Public Credentials:" + subject.getPublicCredentials());
+            Subject.doAsPrivileged(subject,
                                    new  PrivilegedExceptionAction<Void>() {
 
                                     @Override

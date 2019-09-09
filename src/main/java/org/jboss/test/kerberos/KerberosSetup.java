@@ -193,25 +193,29 @@ public class KerberosSetup {
         IOUtils.closeQuietly(srv);
     }
 
-    protected void startKDC(final String[] args) throws Exception {
+    protected void startKDC(String[] args) throws Exception {
         directoryService = DSAnnotationProcessor.getDirectoryService();
         LOGGER.info("Initializing KDC server with binding to '{}'", canonicalHost);
         final Map<String, String> map = new HashMap<String, String>();
         map.put("hostname", canonicalHost);
-        if (args != null && args.length > 0) {
-            for (String ldifFile : args) {
-
-                final String ldifContent = StrSubstitutor.replace(FileUtils.readFileToString(new File(ldifFile), "UTF-8"), map);
-                LOGGER.debug(ldifContent);
-                final SchemaManager schemaManager = directoryService.getSchemaManager();
-                try {
-                    for (LdifEntry ldifEntry : new LdifReader(IOUtils.toInputStream(ldifContent))) {
-                        directoryService.getAdminSession().add(new DefaultEntry(schemaManager, ldifEntry.getEntry()));
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    throw e;
+        if (args == null || args.length == 0) {
+            args = new String[] { "test.ldif" };
+        }
+        for (String ldifFile : args) {
+            File file = new File(ldifFile);
+            if (!file.canRead()) {
+                continue;
+            }
+            final String ldifContent = StrSubstitutor.replace(FileUtils.readFileToString(file, "UTF-8"), map);
+            LOGGER.debug(ldifContent);
+            final SchemaManager schemaManager = directoryService.getSchemaManager();
+            try {
+                for (LdifEntry ldifEntry : new LdifReader(IOUtils.toInputStream(ldifContent))) {
+                    directoryService.getAdminSession().add(new DefaultEntry(schemaManager, ldifEntry.getEntry()));
                 }
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw e;
             }
         }
         LOGGER.info("Generating kerberos configuration file '{}'", krb5ConfPath);
