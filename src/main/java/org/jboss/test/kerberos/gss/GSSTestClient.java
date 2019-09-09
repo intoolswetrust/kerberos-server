@@ -34,6 +34,7 @@ import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.UnsupportedCallbackException;
+import javax.security.auth.kerberos.KerberosTicket;
 import javax.security.auth.login.AccountExpiredException;
 import javax.security.auth.login.Configuration;
 import javax.security.auth.login.CredentialExpiredException;
@@ -182,6 +183,8 @@ public class GSSTestClient {
 //            System.out.println("Subject Principals:" + subject.getPrincipals());
             for (Object creds: subject.getPrivateCredentials()) {
                 System.out.println("Credential class: " + creds.getClass().getName());
+                KerberosTicket kt = (KerberosTicket) creds;
+//                kt.
             }
             System.out.println("Private Credentials:" + subject.getPrivateCredentials());
 //            System.out.println("Public Credentials:" + subject.getPublicCredentials());
