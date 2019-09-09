@@ -45,12 +45,7 @@ import org.ietf.jgss.MessageProp;
 public class NoJaasGssTestServer {
 
     public static final String PROPERTY_PORT = "gsstestserver.port";
-    public static final String PROPERTY_PRINCIPAL = "gsstestserver.principal";
-    public static final String PROPERTY_PASSWORD = "gsstestserver.password";
-
     public static final int PORT = Integer.getInteger(PROPERTY_PORT, 10961);
-    public static final String PRINCIPAL = System.getProperty(PROPERTY_PRINCIPAL, "gsstestserver/xxx@JBOSS.ORG");
-    public static final String PASSWORD = System.getProperty(PROPERTY_PASSWORD, "gsstestpwd");
 
     public static final String CHAR_ENC = "UTF-8";
     public static final int CMD_NOOP = 0;
