@@ -25,6 +25,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -54,6 +55,12 @@ public class NoJaasGssTestServer {
 
     public static final int SOCKET_TIMEOUT = 30 * 1000; // 30s
 
+    private final PrintStream ps;
+
+    public NoJaasGssTestServer(PrintStream ps) {
+        this.ps = ps;
+    }
+
     // Public methods --------------------------------------------------------
 
     /**
@@ -62,16 +69,21 @@ public class NoJaasGssTestServer {
      * @param args
      */
     public static void main(String[] args) {
-        final NoJaasGssTestServer gssTestServer = new NoJaasGssTestServer();
-        if (args.length > 0 && "stop".equals(args[0])) {
-            gssTestServer.stop();
-        } else {
-            try {
-                gssTestServer.start();
-            } catch (Exception e) {
-                e.printStackTrace();
-                System.exit(1);
+        PrintStream ps = System.out;
+        try {
+            if (args != null && args.length > 0) {
+                String param = args[0];
+                if ("stop".equals(param)) {
+                    NoJaasGssTestServer.stop();
+                    return;
+                }
+                ps = new PrintStream(param, "UTF-8");
             }
+            final NoJaasGssTestServer gssTestServer = new NoJaasGssTestServer(ps);
+            gssTestServer.start();
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(1);
         }
     }
 
@@ -80,21 +92,21 @@ public class NoJaasGssTestServer {
         ServerSocket serverSocket = null;
         try {
             serverSocket = new ServerSocket(PORT);
-            System.out.println("Server started on port " + PORT);
+            ps.println("Server started on port " + PORT);
             int command = CMD_NOOP;
             do {
                 Socket socket = null;
                 GSSContext gssContext = null;
                 try {
-                    System.out.println("Waiting for client connection");
+                    ps.println("Waiting for client connection");
                     socket = serverSocket.accept();
-                    System.out.println("Client connected");
+                    ps.println("Client connected");
                     gssContext = gssManager.createContext((GSSCredential) null);
                     final DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
                     final DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
 
                     command = dataInputStream.readInt();
-                    System.out.println("Command code: " + command);
+                    ps.println("Command code: " + command);
                     if (command == CMD_NAME) {
                         while (!gssContext.isEstablished()) {
                             final byte[] inToken = new byte[dataInputStream.readInt()];
@@ -108,7 +120,7 @@ public class NoJaasGssTestServer {
                             }
                         }
                         final String clientName = gssContext.getSrcName().toString();
-                        System.out.println("Context Established with Client " + clientName);
+                        ps.println("Context Established with Client " + clientName);
 
                         // encrypt
                         final MessageProp msgProp = new MessageProp(true);
@@ -118,35 +130,35 @@ public class NoJaasGssTestServer {
                         dataOutputStream.writeInt(outToken.length);
                         dataOutputStream.write(outToken);
                         dataOutputStream.flush();
-                        System.out.println("Client name was returned as the token value.");
+                        ps.println("Client name was returned as the token value.");
                     }
                 } catch (EOFException e) {
-                    System.err.println("Client didn't send a correct message.");
+                    ps.println("Client didn't send a correct message.");
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    e.printStackTrace(ps);
                 } catch (GSSException e) {
-                    e.printStackTrace();
+                    e.printStackTrace(ps);
                 } finally {
                     if (gssContext != null) {
                         try {
                             gssContext.dispose();
                         } catch (GSSException e) {
-                            e.printStackTrace();
+                            e.printStackTrace(ps);
                         }
                     }
                     if (socket != null) {
                         try {
                             socket.close();
                         } catch (IOException e) {
-                            e.printStackTrace();
+                            e.printStackTrace(ps);
                         }
                     }
 
                 }
             } while (command != CMD_STOP);
-            System.out.println("Stop command received.");
+            ps.println("Stop command received.");
         } catch (IOException e) {
-            e.printStackTrace();
+            e.printStackTrace(ps);
         } finally {
             IOUtils.closeQuietly(serverSocket);
         }
@@ -155,7 +167,7 @@ public class NoJaasGssTestServer {
     /**
      * Sends STOP ({@link #CMD_STOP}) command to a running server.
      */
-    private void stop() {
+    private static void stop() {
         System.out.println("Sending STOP command GSSTestServer.");
         // Create an unbound socket
         final Socket socket = new Socket();
