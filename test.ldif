@@ -55,6 +55,19 @@ userPassword: httppwd
 krb5PrincipalName: HTTP/${hostname}@JBOSS.ORG
 krb5KeyVersionNumber: 0
 
+dn: uid=hazelcast,ou=Users,dc=jboss,dc=org
+objectClass: top
+objectClass: person
+objectClass: inetOrgPerson
+objectClass: krb5principal
+objectClass: krb5kdcentry
+cn: Hazelcast member
+sn: Service
+uid: hazelcast
+userPassword: secretsOfHazelcast
+krb5PrincipalName: hz/${hostname}@JBOSS.ORG
+krb5KeyVersionNumber: 0
+
 dn: uid=hnelson,ou=Users,dc=jboss,dc=org
 objectClass: top
 objectClass: person
