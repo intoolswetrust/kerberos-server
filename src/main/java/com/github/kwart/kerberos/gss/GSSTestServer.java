@@ -1,25 +1,4 @@
-/*
- * JBoss, Home of Professional Open Source.
- * Copyright 2012, Red Hat, Inc., and individual contributors
- * as indicated by the @author tags. See the copyright.txt file in the
- * distribution for a full listing of individual contributors.
- *
- * This is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation; either version 2.1 of
- * the License, or (at your option) any later version.
- *
- * This software is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this software; if not, write to the Free
- * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
- * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
- */
-package org.jboss.test.kerberos.gss;
+package com.github.kwart.kerberos.gss;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -40,7 +19,7 @@ import javax.security.auth.login.Configuration;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
 
-import org.apache.commons.io.IOUtils;
+import org.apache.directory.api.util.IOUtils;
 import org.ietf.jgss.GSSContext;
 import org.ietf.jgss.GSSCredential;
 import org.ietf.jgss.GSSException;
@@ -49,7 +28,7 @@ import org.ietf.jgss.MessageProp;
 
 /**
  * A sample server application for testing Kerberos identity propagation.
- * 
+ *
  * @author Josef Cacek
  */
 public class GSSTestServer {
@@ -73,7 +52,7 @@ public class GSSTestServer {
 
     /**
      * The Main.
-     * 
+     *
      * @param args
      */
     public static void main(String[] args) {
@@ -116,7 +95,7 @@ public class GSSTestServer {
 
     /**
      * Authenticates this server in Kerberos KDC.
-     * 
+     *
      * @throws LoginException
      * @throws PrivilegedActionException
      */
@@ -145,14 +124,14 @@ public class GSSTestServer {
 
     }
 
-    // Embedded classes ------------------------------------------------------
     /**
      * A ServerAction which creates a ServerSocket and waits for clients. It sends back the authenticated client name.
-     * 
+     *
      * @author Josef Cacek
      */
-    private class ServerAction implements PrivilegedAction<String> {
+    static class ServerAction implements PrivilegedAction<String> {
 
+        @Override
         public String run() {
             final GSSManager gssManager = GSSManager.getInstance();
             ServerSocket serverSocket = null;
