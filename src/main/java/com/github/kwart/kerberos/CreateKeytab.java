@@ -31,7 +31,7 @@ public class CreateKeytab {
             System.out.println("Kerberos keytab generator");
             System.out.println("-------------------------");
             System.out.println("Usage:");
-            System.out.println("java -classpath kerberos-using-apacheds.jar " + CreateKeytab.class.getName()
+            System.out.println("java -classpath kerberos-server.jar " + CreateKeytab.class.getName()
                     + " <principalName> <passPhrase> [<principalName2> <passPhrase2> ...] <outputKeytabFile>");
         } else {
             final File keytabFile = new File(args[args.length - 1]);

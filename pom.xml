@@ -155,9 +155,9 @@
     </developers>
 
     <scm>
-        <connection>scm:git:git://github.com/intoolswetrust/ldap-server.git</connection>
-        <developerConnection>scm:git:git@github.com:intoolswetrust/ldap-server.git</developerConnection>
-        <url>http://github.com/intoolswetrust/ldap-server/</url>
+        <connection>scm:git:git://github.com/intoolswetrust/kerberos-server.git</connection>
+        <developerConnection>scm:git:git@github.com:intoolswetrust/kerberos-server.git</developerConnection>
+        <url>http://github.com/intoolswetrust/kerberos-server/</url>
         <tag>HEAD</tag>
     </scm>
 
