@@ -27,7 +27,9 @@ import org.apache.directory.api.ldap.model.name.Dn;
 import org.apache.directory.api.ldap.model.schema.SchemaManager;
 import org.apache.directory.api.util.IOUtils;
 import org.apache.directory.server.core.api.DirectoryService;
+import org.apache.directory.server.core.api.interceptor.Interceptor;
 import org.apache.directory.server.core.api.partition.Partition;
+import org.apache.directory.server.core.kerberos.KeyDerivationInterceptor;
 import org.apache.directory.server.core.partition.impl.avl.AvlPartition;
 import org.apache.directory.server.kerberos.KerberosConfig;
 import org.apache.directory.server.kerberos.kdc.KdcServer;
@@ -86,6 +88,9 @@ public class KerberosServer {
         dsFactory.init("ds");
 
         directoryService = dsFactory.getDirectoryService();
+        KeyDerivationInterceptor keyDerivationInterceptor = new KeyDerivationInterceptor();
+        keyDerivationInterceptor.init(directoryService);
+        directoryService.addLast(keyDerivationInterceptor);
         LOGGER.info("Directory service started in " + (System.currentTimeMillis() - startTime) + "ms");
         directoryService.setAllowAnonymousAccess(options.isAllowAnonymous());
         importLdif(options.getLdifFiles());
@@ -137,8 +142,8 @@ public class KerberosServer {
 
         config.setPaEncTimestampRequired(false);
 
-        UdpTransport udp = new UdpTransport(options.getBindAddress(), options.getKerberosPort());
-        kdcServer.addTransports(udp);
+        kdcServer.addTransports(new UdpTransport(options.getBindAddress(), options.getKerberosPort()),
+                new TcpTransport(options.getBindAddress(), options.getKerberosPort()));
         kdcServer.setDirectoryService(directoryService);
 
         File krb5conf = options.getKrb5conf();
