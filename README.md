@@ -25,6 +25,9 @@ The project contains a simple Kerberos keytab generator:
 	Usage:
 	java -classpath target/kerberos-server.jar com.github.kwart.kerberos.CreateKeytab <principalName> <passPhrase> [<principalName2> <passPhrase2> ...] <outputKeytabFile>
 	
-	$ java -classpath target/kerberos-server.jar com.github.kwart.kerberos.CreateKeytab HTTP/localhost@JBOSS.ORG httppwd http.keytab
+	$ java -classpath target/kerberos-server.jar com.github.kwart.kerberos.CreateKeytab HTTP/localhost@KERBEROS.EXAMPLE httppwd http.keytab
+
+	$ java -classpath target/kerberos-server.jar com.github.kwart.kerberos.CreateKeytab remote/localhost@KERBEROS.EXAMPLE remotepwd remote.keytab
+
 	Keytab file was created: /home/kwart/kerberos-tests/http.keytab
 
