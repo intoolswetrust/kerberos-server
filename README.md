@@ -19,12 +19,12 @@ The program can take LDIF files as arguments. The following placeholders are sup
 
 The project contains a simple Kerberos keytab generator:
 
-	$ java -classpath target/kerberos-server.jar org.jboss.test.kerberos.CreateKeytab
+	$ java -classpath target/kerberos-server.jar com.github.kwart.kerberos.CreateKeytab
 	Kerberos keytab generator
 	-------------------------
 	Usage:
-	java -classpath target/kerberos-server.jar org.jboss.test.kerberos.CreateKeytab <principalName> <passPhrase> [<principalName2> <passPhrase2> ...] <outputKeytabFile>
+	java -classpath target/kerberos-server.jar com.github.kwart.kerberos.CreateKeytab <principalName> <passPhrase> [<principalName2> <passPhrase2> ...] <outputKeytabFile>
 	
-	$ java -classpath target/kerberos-server.jar org.jboss.test.kerberos.CreateKeytab HTTP/localhost@JBOSS.ORG httppwd http.keytab
+	$ java -classpath target/kerberos-server.jar com.github.kwart.kerberos.CreateKeytab HTTP/localhost@JBOSS.ORG httppwd http.keytab
 	Keytab file was created: /home/kwart/kerberos-tests/http.keytab
 
