@@ -61,7 +61,7 @@ The program can take LDIF files as arguments. The following placeholders are sup
 * `${host}` - bind address (127.0.0.1 is used when wildcard address is used;
 * `${canonicalhost}` canonical version of the host.
 
-If no LDIF file argument is provided the default LDIF
+If no LDIF file argument is provided, the default LDIF
 ([`src/main/resources/default.ldif`](src/main/resources/default.ldif)) is used.
 
 ## Generate keytab
